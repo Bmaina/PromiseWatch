@@ -1,0 +1,99 @@
+# PromiseWatch
+
+**Satellite-verified tracking of politically promised infrastructure in Kenya — dams, roads, and stadiums that were announced but may never have been delivered.**
+
+Built for the OSF × Andela Hackathon (Transparency & Accountability track), October 2026.
+
+---
+
+## The problem
+
+Kenyan politicians regularly announce large infrastructure projects — dams, roads, stadiums, boreholes — with promised completion dates. Years later, many of these projects have stalled, been quietly cancelled, or never broken ground at all, while the original announcement remains the only public record most citizens ever see. Tracking which promises were kept requires either trusting official reporting (which has an obvious incentive problem) or physically visiting the site.
+
+**PromiseWatch checks a different kind of evidence: what's actually on the ground, from space.** Public satellite imagery (Sentinel-2, 10m resolution, revisited every ~5 days, free and open) can directly observe whether a claimed reservoir has filled, whether a road corridor shows new construction, or whether a stadium footprint exists — independent of what any press release says.
+
+## How it works
+
+Every case follows the same four-step framework:
+
+1. **Claim** — a specific, dated, located promise (e.g., "Kimwarer Dam will be completed by 2020," sourced from public reporting or project documents).
+2. **Evidence** — satellite imagery pulled for that exact location, compared between a baseline period (before the claim) and the current period.
+3. **Assurance** — a verdict: **Supported**, **Not Delivered / Conflicted**, or **Underdetermined**, based on a specific, stated evidentiary rule (not a subjective read of the imagery).
+4. **Action** — what a citizen or journalist can actually do with the result (not implemented yet — see Roadmap).
+
+### Methodology: dam detection (built and validated)
+
+For a claimed dam/reservoir project:
+
+- Pull a cloud-masked Sentinel-2 composite for a **baseline window** (90 days after the claimed construction start) and a **current window** (the most recent 90 days).
+- Compute **MNDWI** (Modified Normalized Difference Water Index) on each composite and classify pixels as water above a threshold.
+- Sum water-classified pixel area within a buffer around the claimed site to get **hectares of water extent**, for both periods.
+- Compute the **delta**: `current_extent_ha − pre_extent_ha`. This is the key methodological choice — **raw current extent is not used directly**, because many sites have real, pre-existing water (a natural river, a wetland, or in several of our own cases, small unrelated community water pans) that has nothing to do with the claimed project. Only water added *since baseline* counts as evidence the project exists.
+- Apply a **guardrail**: if the delta is below a small threshold (set per-case, well above typical small-pan sizes but well below the claimed project's design scale), the verdict is **Not Delivered / Conflicted** — there may be water at the site, but not at a scale consistent with the claim.
+- If the delta clears the guardrail, compute **percent of design capacity newly filled** (delta ÷ the project's actual engineering design reservoir area) — this is a **Supported** verdict, reported as a hydrological fill percentage, explicitly *not* the same thing as a contractor's reported "percent construction complete" (these lag each other and measure different things).
+
+### Why the guardrail exists — a real example, not a hypothetical
+
+Early in building this, one of our test cases (Arror and Kimwarer dams, Elgeyo Marakwet) turned out to have small, pre-existing community water pans near — but unrelated to — the claimed mega-dam sites. A naive "is there water present" check would have misread pond ~1-2 ha in size as partial evidence of a Sh66.5 billion reservoir project. The delta/guardrail approach exists specifically to catch this. See `evidence/Kimwarer_Dam.png` — a small pond is visible near a settlement cluster, but it's roughly two orders of magnitude smaller than the claimed project's 215-hectare design reservoir, and the pipeline correctly classifies it as below the guardrail rather than as supporting evidence.
+
+## Case results (as of this submission)
+
+| Project | Claimed | Design reservoir | Pre-baseline (ha) | Current (ha) | Delta (ha) | Verdict |
+|---|---|---|---|---|---|---|
+| **Thwake Dam** | Construction started 2018, phase 1 largely complete by 2026 | 2,900 ha | 16.91 | 63.03 | 46.13 | **SUPPORTED** — reservoir forming, ~1.6% of design surface area newly filled. Confirmed visually: large water body and active dam construction visible in satellite imagery. |
+| **Arror Dam** | Contracted 2017, Sh38.5bn | 280 ha | 0.00 | 0.00 | 0.00 | **NOT DELIVERED / CONFLICTED** — no water at any scale. Confirmed visually: no water body of any kind visible in the AOI. |
+| **Kimwarer Dam** | Contracted 2017, Sh28bn | 215 ha | 0.00 | 0.00 | 0.00 | **NOT DELIVERED / CONFLICTED** — no water above the small-pan guardrail. A small pond (~1-2 ha, unrelated to the claimed project) is visible nearby in imagery but correctly falls below the 20 ha threshold. |
+
+Three additional cases (Rironi–Mau Summit Highway, the cancelled Modogashe–Habasweini–Mandera road, Kabarnet Stadium, Bomet IAAF Stadium) are documented with sourced claims in `promisewatch_cases_v3.csv` but **not yet run** — see Roadmap.
+
+### A note on Thwake's low percentage
+
+63 hectares against a 2,900-hectare design target sounds like a low number, and it is — but that's expected, not a red flag. Public reporting places Thwake's phase-1 construction at roughly 94% complete as of mid-2026, with the dam gates and upstream concrete face still outstanding. A dam typically can't hold back significant water until its gates are functional; water is routed around the site through diversion tunnels during this phase. A small but real delta above baseline is consistent with a nearly-complete dam that hasn't started impounding at scale yet — this is a genuinely different, more specific claim than either "delivered" or "not delivered," and the tool is built to say so rather than force a binary answer.
+
+## What this can and can't detect (read this before trusting any result)
+
+This is a hackathon proof of concept, not a finished verification system. Specific, known limitations:
+
+- **Resolution floor.** Sentinel-2 is 10m/pixel. A large reservoir is unambiguous; a narrow river channel or a small structure can fail to register at all after cloud-masked compositing, producing a 0.0 ha result that means "undetectable at this resolution," not necessarily "doesn't exist." We validated this distinction for Arror/Kimwarer with a manual visual check of the raw imagery (see `evidence/`) — **every automated verdict in this repo should be treated as provisional until visually cross-checked**, which is a real bottleneck for scaling this beyond a handful of hand-verified cases.
+- **Boreholes are out of scope.** A borehole is a few meters across — far below what free satellite imagery can resolve directly. This case type was deliberately excluded from this submission rather than faked with a weak proxy signal.
+- **Roads and stadiums are not yet implemented.** The detection functions (`evaluate_road_case`, `evaluate_stadium_case`) exist as stubs with a documented approach (SAR backscatter change along a route corridor for roads; built-up footprint change for stadiums) but were not built in time for this submission — see Roadmap.
+- **Coordinates matter enormously and are easy to get wrong.** Over the course of building this, the Arror and Kimwarer coordinates were revised three times from different sources before landing on values that were visually confirmed against real imagery. A wrong AOI silently produces a wrong verdict with no error message. Every case's location should be treated as needing independent confirmation, not taken from a single source.
+- **"Design surface area" figures are approximate.** Thwake's 2,900 ha figure comes from Ministry of Water/press reporting; Arror's 280 ha and Kimwarer's 215 ha are reconstructed from NEMA environmental impact assessment engineering descriptions (dam height, crest length, reservoir area), not pulled from a single authoritative table. These should be verified against primary EIA documents before being cited as precise figures in any public-facing claim.
+
+## Repository structure
+
+```
+promisewatch/
+├── README.md                      # this file
+├── promisewatch_pipeline.py       # full evidence pipeline — dam detection built, road/stadium stubbed
+├── promisewatch_cases_v3.csv      # sourced case data: claims, locations, dates, design specs, sources
+└── evidence/
+    ├── Thwake_Dam.png             # current-period Sentinel-2 composite, visual confirmation
+    ├── Arror_Dam.png              # current-period Sentinel-2 composite, visual confirmation
+    └── Kimwarer_Dam.png           # current-period Sentinel-2 composite, visual confirmation
+```
+
+## Running this yourself
+
+1. Open [Google Colab](https://colab.research.google.com) and create a new notebook.
+2. In the first cell: `!pip install earthengine-api geemap pandas`
+3. You'll need a Google Earth Engine account with a linked Cloud project — sign up at [code.earthengine.google.com](https://code.earthengine.google.com) if you don't have one, and update the `project=` value in the script to your own project ID.
+4. Upload `promisewatch_cases_v3.csv` into the Colab session (folder icon in the sidebar → upload).
+5. Paste the full contents of `promisewatch_pipeline.py` into a cell and run it. It will prompt a browser authentication flow on first run.
+6. Results print as a summary table; thumbnail URLs for each case's current-period imagery print at the end for visual spot-checking.
+
+## Roadmap (post-hackathon)
+
+- Implement road corridor detection (SAR backscatter change along a route, using Sentinel-1 for cloud robustness) and stadium footprint detection.
+- Replace circular AOI buffers with proper polygons following actual river courses / road routes — a circle is a rough approximation that either clips or over-includes terrain depending on the site's real shape.
+- Build the "Action" layer: route low-confidence or contested cases to a crowd-corroboration channel (community reporting) rather than leaving satellite evidence as the only word, and link confirmed non-delivery cases to concrete next steps — e.g. a template petition to the relevant county assembly, or a link to Kenya's Auditor-General or EACC reporting channels.
+- Low-bandwidth, multilingual (English/Swahili) frontend for browsing cases without needing to run the pipeline.
+- Independent, sourced verification of every design-capacity figure against primary EIA/engineering documents rather than press reporting.
+
+## Data sources
+
+Claim dates, locations, and project status are sourced from public Kenyan reporting (Nation, Kenyans.co.ke, Newsroom, Pulse Sports, Wikipedia) and NEMA environmental impact assessment engineering descriptions, cited per-case in `promisewatch_cases_v3.csv`. Satellite imagery: Copernicus Sentinel-2 (ESA), accessed via Google Earth Engine.
+
+## License
+
+[Add your chosen license here — MIT is a reasonable default for a hackathon submission if you don't have a preference.]
