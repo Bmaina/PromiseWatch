@@ -8,7 +8,7 @@ Built for the OSF × Andela Hackathon (Transparency & Accountability track), Oct
 
 ## The problem
 
-Kenyan politicians regularly announce large infrastructure projects — dams, roads, stadiums, boreholes — with promised completion dates. Years later, many of these projects have stalled, been quietly cancelled, or never broken ground at all, while the original announcement remains the only public record most citizens ever see. Tracking which promises were kept requires either trusting official reporting (which has an obvious incentive problem) or physically visiting the site.
+Public institutions and political offices in Kenya regularly announce large infrastructure projects — dams, roads, stadiums, boreholes — with a stated location, scope, and completion target. Years later, many of these projects have stalled, been quietly cancelled, or never broken ground at all, while the original announcement remains the only public record most citizens ever see. Tracking which commitments were kept requires either trusting official reporting (which has an obvious incentive problem) or physically visiting the site.
 
 **PromiseWatch checks a different kind of evidence: what's actually on the ground, from space.** Public satellite imagery (Sentinel-2, 10m resolution, revisited every ~5 days, free and open) can directly observe whether a claimed reservoir has filled, whether a road corridor shows new construction, or whether a stadium footprint exists — independent of what any press release says.
 
@@ -16,7 +16,7 @@ Kenyan politicians regularly announce large infrastructure projects — dams, ro
 
 Every case follows the same four-step framework:
 
-1. **Claim** — a specific, dated, located promise (e.g., "Kimwarer Dam will be completed by 2020," sourced from public reporting or project documents).
+1. **Claim** — a specific public infrastructure commitment: a public institution or political office announced a project with a stated location, scope, and/or completion target (e.g., "Kimwarer Dam will be completed by 2020," sourced from public reporting or project documents).
 2. **Evidence** — satellite imagery pulled for that exact location, compared between a baseline period (before the claim) and the current period.
 3. **Assurance** — a verdict: **Supported**, **Not Delivered / Conflicted**, or **Underdetermined**, based on a specific, stated evidentiary rule (not a subjective read of the imagery).
 4. **Action** — what a citizen or journalist can actually do with the result (not implemented yet — see Roadmap).
@@ -32,6 +32,10 @@ For a claimed dam/reservoir project:
 - Apply a **guardrail**: if the delta is below a small threshold (set per-case, well above typical small-pan sizes but well below the claimed project's design scale), the verdict is **Not Delivered / Conflicted** — there may be water at the site, but not at a scale consistent with the claim.
 - If the delta clears the guardrail, compute **percent of design capacity newly filled** (delta ÷ the project's actual engineering design reservoir area) — this is a **Supported** verdict, reported as a hydrological fill percentage, explicitly *not* the same thing as a contractor's reported "percent construction complete" (these lag each other and measure different things).
 
+**What a verdict does and doesn't claim.** "Supported" and "Not Delivered / Conflicted" describe what the satellite evidence establishes, not a legal or investigative finding. "Not Delivered / Conflicted" means: no observable physical development consistent with the claimed project's scale — it does not by itself establish *why* (cancelled, delayed, defunded, or relocated all look similar from orbit). Where corroborating source documentation exists (as it does for Arror/Kimwarer), the verdict is stronger; where it doesn't, treat the label as evidence, not a verdict of fact.
+
+**Current implementation vs. extensible architecture.** Dam/reservoir detection is built, run, and validated on three real cases. Road and stadium detection are deliberately *not* implemented in this submission — three half-working detectors would be a weaker proof of concept than one fully validated methodology. The architecture is designed to extend to them (see Roadmap), and the case file documents all three project types with sourced claims now, ready for that extension.
+
 ### Why the guardrail exists — a real example, not a hypothetical
 
 Early in building this, one of our test cases (Arror and Kimwarer dams, Elgeyo Marakwet) turned out to have small, pre-existing community water pans near — but unrelated to — the claimed mega-dam sites. A naive "is there water present" check would have misread pond ~1-2 ha in size as partial evidence of a Sh66.5 billion reservoir project. The delta/guardrail approach exists specifically to catch this. See `evidence/Kimwarer_Dam.png` — a small pond is visible near a settlement cluster, but it's roughly two orders of magnitude smaller than the claimed project's 215-hectare design reservoir, and the pipeline correctly classifies it as below the guardrail rather than as supporting evidence.
@@ -44,7 +48,7 @@ Early in building this, one of our test cases (Arror and Kimwarer dams, Elgeyo M
 | **Arror Dam** | Contracted 2017, Sh38.5bn | 280 ha | 0.00 | 0.00 | 0.00 | **NOT DELIVERED / CONFLICTED** — no water at any scale. Confirmed visually: no water body of any kind visible in the AOI. |
 | **Kimwarer Dam** | Contracted 2017, Sh28bn | 215 ha | 0.00 | 0.00 | 0.00 | **NOT DELIVERED / CONFLICTED** — no water above the small-pan guardrail. A small pond (~1-2 ha, unrelated to the claimed project) is visible nearby in imagery but correctly falls below the 20 ha threshold. |
 
-Three additional cases (Rironi–Mau Summit Highway, the cancelled Modogashe–Habasweini–Mandera road, Kabarnet Stadium, Bomet IAAF Stadium) are documented with sourced claims in `promisewatch_cases_v3.csv` but **not yet run** — see Roadmap.
+Three additional cases (Rironi–Mau Summit Highway, the cancelled Modogashe–Habasweini–Mandera road, Kabarnet Stadium, Bomet IAAF Stadium) are documented with sourced claims in `promisewatch_cases_v4.csv` but **not yet run** — see Roadmap.
 
 ### A note on Thwake's low percentage
 
@@ -60,13 +64,24 @@ This is a hackathon proof of concept, not a finished verification system. Specif
 - **Coordinates matter enormously and are easy to get wrong.** Over the course of building this, the Arror and Kimwarer coordinates were revised three times from different sources before landing on values that were visually confirmed against real imagery. A wrong AOI silently produces a wrong verdict with no error message. Every case's location should be treated as needing independent confirmation, not taken from a single source.
 - **"Design surface area" figures are approximate.** Thwake's 2,900 ha figure comes from Ministry of Water/press reporting; Arror's 280 ha and Kimwarer's 215 ha are reconstructed from NEMA environmental impact assessment engineering descriptions (dam height, crest length, reservoir area), not pulled from a single authoritative table. These should be verified against primary EIA documents before being cited as precise figures in any public-facing claim.
 
+## AI-assisted development
+
+We used an AI coding assistant (Claude) to write and iterate on the Earth Engine pipeline — cloud masking, the water index, the delta/guardrail logic — and to debug real errors as they surfaced (an unquoted project-ID string, a missing-variable error, a methodology gap where the guardrail initially compared raw extent instead of delta-over-baseline). The core idea, the choice to build a delta/guardrail-based verifier, case selection, and every accuracy judgment were made by us; every AI-assisted claim was independently verified against primary evidence (satellite thumbnails, source articles, NEMA engineering specs) before being trusted. Full detail in `written_summary.md`.
+
+## Scalability
+
+Three separate axes, not one:
+- **Geographic** — Sentinel-2 covers the whole planet at the same free resolution; the method transfers to any region without new infrastructure.
+- **Infrastructure type** — dams are proven; roads and stadiums follow the same claim→evidence→delta pattern with different indices (SAR backscatter change, built-up footprint change), not a different architecture.
+- **Evidence source** — Sentinel-2 today; Sentinel-1 SAR (cloud-robust, planned for road detection) and higher-resolution commercial imagery are natural extensions where free optical imagery hits its resolution floor.
+
 ## Repository structure
 
 ```
 promisewatch/
 ├── README.md                      # this file
 ├── promisewatch_pipeline.py       # full evidence pipeline — dam detection built, road/stadium stubbed
-├── promisewatch_cases_v3.csv      # sourced case data: claims, locations, dates, design specs, sources
+├── promisewatch_cases_v4.csv      # sourced case data: claims, locations, dates, design specs, sources
 └── evidence/
     ├── Thwake_Dam.png             # current-period Sentinel-2 composite, visual confirmation
     ├── Arror_Dam.png              # current-period Sentinel-2 composite, visual confirmation
@@ -78,9 +93,23 @@ promisewatch/
 1. Open [Google Colab](https://colab.research.google.com) and create a new notebook.
 2. In the first cell: `!pip install earthengine-api geemap pandas`
 3. You'll need a Google Earth Engine account with a linked Cloud project — sign up at [code.earthengine.google.com](https://code.earthengine.google.com) if you don't have one, and update the `project=` value in the script to your own project ID.
-4. Upload `promisewatch_cases_v3.csv` into the Colab session (folder icon in the sidebar → upload).
+4. Upload `promisewatch_cases_v4.csv` into the Colab session (folder icon in the sidebar → upload).
 5. Paste the full contents of `promisewatch_pipeline.py` into a cell and run it. It will prompt a browser authentication flow on first run.
 6. Results print as a summary table; thumbnail URLs for each case's current-period imagery print at the end for visual spot-checking.
+
+## Operating constraints — what's real vs. roadmap
+
+The hackathon brief names seven conditions a solution should account for. Honest status on each, checked against what's actually built rather than planned:
+
+| Constraint | Status |
+|---|---|
+| **Trust and verification** | Partially built. Every claim is sourced and cited; the delta/guardrail method and every verdict were visually cross-checked against raw imagery. Every pipeline result now carries a `checked_on_utc` timestamp, so a user always knows when a verdict was last generated — Sentinel-2 updates every ~5 days, so a stale timestamp should prompt a re-check, not be trusted indefinitely. |
+| **Low bandwidth** | Not built. The current PoC is a Colab notebook making live Earth Engine calls — it needs solid internet to run. Genuinely roadmap, not started. |
+| **Accessibility and inclusion** | Not built. No frontend exists yet, so no literacy/disability/digital-confidence design has happened. Worth noting even the raw satellite thumbnails in `evidence/` assume some visual literacy to interpret — a gap in the demo materials themselves, not just the missing app. |
+| **Privacy and security** | Not yet applicable — the current PoC collects no personal data. The roadmap's crowd-corroboration feature (see below) will involve people submitting reports and needs an anonymity design *before* it's built, not after. |
+| **Multilingual access** | Not built. English only, everywhere, right now. Roadmap. |
+| **Local relevance** | Built and genuinely strong — every case is a sourced, real Kenyan project, cross-checked against NEMA documents and local reporting rather than a generic template. |
+| **Clear next steps** | Partially built. This is the "Action" step of the Claim→Evidence→Assurance→Action framework, and until now it was the one pillar that was pure roadmap. `promisewatch_cases_v4.csv` now includes a `suggested_action_if_not_delivered` column with a real, sourced contact (Kenya's Ethics and Anti-Corruption Commission — toll-free 1551, report@integrity.go.ke, anonymous whistleblower system) for every case where non-delivery is confirmed or suspected. This is a minimal first version, not a built product — no in-app link, no case-specific routing (e.g. to a specific County Assembly petition process), no tracking of what happens after a report is filed. |
 
 ## Roadmap (post-hackathon)
 
@@ -92,7 +121,7 @@ promisewatch/
 
 ## Data sources
 
-Claim dates, locations, and project status are sourced from public Kenyan reporting (Nation, Kenyans.co.ke, Newsroom, Pulse Sports, Wikipedia) and NEMA environmental impact assessment engineering descriptions, cited per-case in `promisewatch_cases_v3.csv`. Satellite imagery: Copernicus Sentinel-2 (ESA), accessed via Google Earth Engine.
+Claim dates, locations, and project status are sourced from public Kenyan reporting (Nation, Kenyans.co.ke, Newsroom, Pulse Sports, Wikipedia) and NEMA environmental impact assessment engineering descriptions, cited per-case in `promisewatch_cases_v4.csv`. Satellite imagery: Copernicus Sentinel-2 (ESA), accessed via Google Earth Engine.
 
 ## License
 

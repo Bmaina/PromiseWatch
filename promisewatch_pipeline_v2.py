@@ -9,7 +9,7 @@ by hand afterward.
 Requires: pip install earthengine-api geemap pandas  (run once, in
 its own cell, before this one)
 
-Requires an uploaded promisewatch_cases_v3.csv in the Colab session
+Requires an uploaded promisewatch_cases_v4.csv in the Colab session
 (folder icon -> upload) before running.
 """
 
@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 ee.Authenticate()  # opens a browser auth flow — approve it
 ee.Initialize(project='promisewatch-cases')
 
-CASES_CSV = "promisewatch_cases_v3.csv"
+CASES_CSV = "promisewatch_cases_v4.csv"
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +181,12 @@ def resolve_case(result):
         'current_extent_ha': round(cur_ha, 2) if cur_ha is not None else None,
         'delta_ha': round(delta_ha, 2) if delta_ha is not None else None,
         'verdict': verdict,
+        # Trust/verification: the rules explicitly ask how a user knows when a
+        # result was last checked. This timestamp is that answer — always
+        # display it alongside any verdict shown to a user, never the verdict
+        # alone, since Sentinel-2 imagery updates every ~5 days and a
+        # months-old "Not Delivered" could be stale.
+        'checked_on_utc': datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC'),
     }
 
 
