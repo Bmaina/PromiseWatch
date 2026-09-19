@@ -92,7 +92,7 @@ promisewatch/
     └── Kimwarer_Dam.png           # current-period Sentinel-2 composite, visual confirmation
 ```
 
-## Frontend — try the actual demo
+## Frontend- try the actual demo
 
 `app.py` is a Streamlit case browser and case-detail app- search/filter projects by county and status, then drill into a case to see the claim, the satellite evidence, the guardrail reasoning, and a real next-step action. English/Swahili interface toggle in the sidebar (translates UI labels; sourced case content stays in its original language — see the app's own sidebar note on this).
 
@@ -116,7 +116,7 @@ streamlit run app.py
 6. Results print as a summary table; thumbnail URLs for each case's current-period imagery print at the end for visual spot-checking.
 7. Update `resolved_results.json` with any new numbers so the frontend reflects the latest run.
 
-## Operating constraints — what's real vs. roadmap
+## Operating constraints- what's real vs. roadmap
 
 The hackathon brief names seven conditions a solution should account for. Honest status on each, checked against what's actually built rather than planned:
 
