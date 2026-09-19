@@ -34,7 +34,7 @@ For a claimed dam/reservoir project:
 
 **What a verdict does and doesn't claim.** "Supported" and "Not Delivered / Conflicted" describe what the satellite evidence establishes, not a legal or investigative finding. "Not Delivered / Conflicted" means: no observable physical development consistent with the claimed project's scale, it does not by itself establish *why* (cancelled, delayed, defunded, or relocated all look similar from orbit). Where corroborating source documentation exists (as it does for Arror/Kimwarer), the verdict is stronger; where it doesn't, treat the label as evidence, not a verdict of fact.
 
-**Current implementation vs. extensible architecture.** Dam/reservoir detection is built, run, and validated on three real cases. Road and stadium detection are deliberately *not* implemented in this submission — three half-working detectors would be a weaker proof of concept than one fully validated methodology. The architecture is designed to extend to them (see Roadmap), and the case file documents all three project types with sourced claims now, ready for that extension.
+**Current implementation vs. extensible architecture.** Dam/reservoir detection is built, run, and validated on three real cases. Road and stadium detection are deliberately *not* implemented in this submission, three half-working detectors would be a weaker proof of concept than one fully validated methodology. The architecture is designed to extend to them (see Roadmap), and the case file documents all three project types with sourced claims now, ready for that extension.
 
 ### Why the guardrail exists- a real example, not a hypothetical
 
