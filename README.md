@@ -10,7 +10,7 @@ Built for the OSF × Andela Hackathon (Transparency & Accountability track), Sep
 
 Public institutions and political offices in Kenya regularly announce large infrastructure projects — dams, roads, stadiums, boreholes — with a stated location, scope, and completion target. Years later, many of these projects have stalled, been quietly cancelled, or never broken ground at all, while the original announcement remains the only public record most citizens ever see. Tracking which commitments were kept requires either trusting official reporting (which has an obvious incentive problem) or physically visiting the site.
 
-**PromiseWatch checks a different kind of evidence: what's actually on the ground, from space.** Public satellite imagery (Sentinel-2, 10m resolution, revisited every ~5 days, free and open) can directly observe whether a claimed reservoir has filled, whether a road corridor shows new construction, or whether a stadium footprint exists — independent of what any press release says.
+**PromiseWatch checks a different kind of evidence: what's actually on the ground, from space.** Public satellite imagery (Sentinel-2, 10m resolution, revisited every ~5 days, free and open) can directly observe whether a claimed reservoir has filled, whether a road corridor shows new construction, or whether a stadium footprint exists, independent of what any press release says.
 
 ## How it works
 
