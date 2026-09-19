@@ -1,0 +1,41 @@
+{
+  "note": "These are the resolved outputs of promisewatch_pipeline.py's actual run against real Earth Engine imagery, captured here so the demo frontend doesn't require every visitor to have Earth Engine credentials. Re-run the pipeline and update this file to refresh. checked_on reflects when this file was generated, not a live query.",
+  "results": {
+    "Thwake Dam": {
+      "pre_extent_ha": 16.91,
+      "current_extent_ha": 63.03,
+      "delta_ha": 46.13,
+      "guardrail_min_ha": 30,
+      "design_target_ha": 2900,
+      "pct_filled": 1.6,
+      "verdict_status": "SUPPORTED",
+      "verdict_text": "Reservoir forming — ~1.6% of design surface area (46.13 ha of 2,900 ha) newly filled since baseline. Not equivalent to the contractor's reported ~94% construction-complete figure — these measure different things.",
+      "visually_confirmed": true,
+      "checked_on": "2026-09-18"
+    },
+    "Arror Dam": {
+      "pre_extent_ha": 0.0,
+      "current_extent_ha": 0.0,
+      "delta_ha": 0.0,
+      "guardrail_min_ha": 20,
+      "design_target_ha": 280,
+      "pct_filled": 0.0,
+      "verdict_status": "NOT DELIVERED / CONFLICTED",
+      "verdict_text": "No water detected at any scale within the claimed site. Visually confirmed: no water body of any kind visible in the satellite composite.",
+      "visually_confirmed": true,
+      "checked_on": "2026-09-18"
+    },
+    "Kimwarer Dam": {
+      "pre_extent_ha": 0.0,
+      "current_extent_ha": 0.0,
+      "delta_ha": 0.0,
+      "guardrail_min_ha": 20,
+      "design_target_ha": 215,
+      "pct_filled": 0.0,
+      "verdict_status": "NOT DELIVERED / CONFLICTED",
+      "verdict_text": "A small pre-existing pond is visible near the site, but water added since baseline is 0.00 ha — far below the 20 ha guardrail for a 215 ha claimed reservoir. Not evidence the dam exists.",
+      "visually_confirmed": true,
+      "checked_on": "2026-09-18"
+    }
+  }
+}

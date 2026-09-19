@@ -80,15 +80,38 @@ Three separate axes, not one:
 ```
 promisewatch/
 ├── README.md                      # this file
+├── app.py                         # Streamlit frontend — case browser + case detail, EN/SW toggle
+├── requirements.txt                # streamlit, pandas
+├── resolved_results.json          # real pipeline output the frontend reads (see note below)
 ├── promisewatch_pipeline.py       # full evidence pipeline — dam detection built, road/stadium stubbed
-├── promisewatch_cases_v4.csv      # sourced case data: claims, locations, dates, design specs, sources
+├── promisewatch_cases_v4.csv      # sourced case data: claims, locations, dates, design specs, sources, action links
+├── deck/                          # pitch deck source + exports
 └── evidence/
     ├── Thwake_Dam.png             # current-period Sentinel-2 composite, visual confirmation
     ├── Arror_Dam.png              # current-period Sentinel-2 composite, visual confirmation
     └── Kimwarer_Dam.png           # current-period Sentinel-2 composite, visual confirmation
 ```
 
-## Running this yourself
+## Frontend — try the actual demo
+
+`app.py` is a Streamlit case browser and case-detail app — search/filter projects by county and status, then drill into a case to see the claim, the satellite evidence, the guardrail reasoning, and a real next-step action. English/Swahili interface toggle in the sidebar (translates UI labels; sourced case content stays in its original language — see the app's own sidebar note on this).
+
+**It reads `resolved_results.json`, not live Earth Engine** — this is deliberate, not a shortcut: a public-facing app can't require every visitor to have Earth Engine credentials, and live per-visit satellite queries would work against the low-bandwidth goal this frontend exists to serve. `resolved_results.json` is the real output of `promisewatch_pipeline.py`'s actual run (see the Case results table above) — re-run the pipeline and update this file to refresh it, it isn't fabricated data.
+
+**One honest gap in the app itself:** the case-detail page shows a current-period evidence image but not a baseline image — only the current-period thumbnails were exported for this submission. The baseline hectare *value* is real and displayed; the baseline *image* isn't included. The app says this explicitly rather than duplicating the current image and mislabeling it.
+
+Run locally:
+```
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Deploy a live link (recommended for judges — this is what makes the difference between "here's a Colab notebook" and an actual demo):
+1. Push this repo to GitHub (public).
+2. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub, and deploy `app.py` from the repo.
+3. You get a public URL in about a minute — put that link in your written summary and pitch deck alongside the repo link.
+
+## Running the evidence pipeline yourself
 
 1. Open [Google Colab](https://colab.research.google.com) and create a new notebook.
 2. In the first cell: `!pip install earthengine-api geemap pandas`
@@ -96,6 +119,7 @@ promisewatch/
 4. Upload `promisewatch_cases_v4.csv` into the Colab session (folder icon in the sidebar → upload).
 5. Paste the full contents of `promisewatch_pipeline.py` into a cell and run it. It will prompt a browser authentication flow on first run.
 6. Results print as a summary table; thumbnail URLs for each case's current-period imagery print at the end for visual spot-checking.
+7. Update `resolved_results.json` with any new numbers so the frontend reflects the latest run.
 
 ## Operating constraints — what's real vs. roadmap
 
@@ -104,12 +128,12 @@ The hackathon brief names seven conditions a solution should account for. Honest
 | Constraint | Status |
 |---|---|
 | **Trust and verification** | Partially built. Every claim is sourced and cited; the delta/guardrail method and every verdict were visually cross-checked against raw imagery. Every pipeline result now carries a `checked_on_utc` timestamp, so a user always knows when a verdict was last generated — Sentinel-2 updates every ~5 days, so a stale timestamp should prompt a re-check, not be trusted indefinitely. |
-| **Low bandwidth** | Not built. The current PoC is a Colab notebook making live Earth Engine calls — it needs solid internet to run. Genuinely roadmap, not started. |
-| **Accessibility and inclusion** | Not built. No frontend exists yet, so no literacy/disability/digital-confidence design has happened. Worth noting even the raw satellite thumbnails in `evidence/` assume some visual literacy to interpret — a gap in the demo materials themselves, not just the missing app. |
+| **Low bandwidth** | Partially built. `app.py` replaces the Colab-only pipeline with a Streamlit frontend, which is far lighter than a full React build and reads pre-computed results (no live Earth Engine calls per visit). Still needs a stable connection to hold its session — not optimized for 2G or genuinely unreliable connectivity, and that's a real remaining gap, not solved. |
+| **Accessibility and inclusion** | Partially built. `app.py` uses plain-language verdict labels (not just jargon), pairs every status with an icon *and* text so color isn't the only signal, and passes proper labels to screen-reader-relevant elements rather than empty ones (caught and fixed via automated testing, not assumed). Not yet addressed: no testing with actual screen readers, no plain-language mode for low-literacy users beyond avoiding jargon, no disability-specific user testing. |
 | **Privacy and security** | Not yet applicable — the current PoC collects no personal data. The roadmap's crowd-corroboration feature (see below) will involve people submitting reports and needs an anonymity design *before* it's built, not after. |
-| **Multilingual access** | Not built. English only, everywhere, right now. Roadmap. |
+| **Multilingual access** | Partially built. `app.py` has an English/Swahili toggle for interface labels (buttons, section headers, status text). Sourced case content — claims, source citations, verdict reasoning — remains English-only; translating that would require either a verified human translation per case or a machine-translation step we chose not to ship without a way to verify its accuracy against the source. |
 | **Local relevance** | Built and genuinely strong — every case is a sourced, real Kenyan project, cross-checked against NEMA documents and local reporting rather than a generic template. |
-| **Clear next steps** | Partially built. This is the "Action" step of the Claim→Evidence→Assurance→Action framework, and until now it was the one pillar that was pure roadmap. `promisewatch_cases_v4.csv` now includes a `suggested_action_if_not_delivered` column with a real, sourced contact (Kenya's Ethics and Anti-Corruption Commission — toll-free 1551, report@integrity.go.ke, anonymous whistleblower system) for every case where non-delivery is confirmed or suspected. This is a minimal first version, not a built product — no in-app link, no case-specific routing (e.g. to a specific County Assembly petition process), no tracking of what happens after a report is filed. |
+| **Clear next steps** | Partially built. This is the "Action" step of the Claim→Evidence→Assurance→Action framework, and until now it was the one pillar that was pure roadmap. `promisewatch_cases_v4.csv` includes a `suggested_action_if_not_delivered` column with a real, sourced contact (Kenya's Ethics and Anti-Corruption Commission — toll-free 1551, report@integrity.go.ke, anonymous whistleblower system) for every case where non-delivery is confirmed or suspected, and `app.py` now surfaces it directly on each case page rather than leaving it in a CSV a user would never see. Still minimal — no in-app routing, no case-specific escalation paths (e.g. a specific County Assembly's petition process), no tracking of what happens after a report is filed. |
 
 ## Roadmap (post-hackathon)
 
