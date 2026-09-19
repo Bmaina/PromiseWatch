@@ -149,4 +149,4 @@ Claim dates, locations, and project status are sourced from public Kenyan report
 
 ## License
 
-[Add your chosen license here — MIT is a reasonable default for a hackathon submission if you don't have a preference.]
+Free MIT Licence
